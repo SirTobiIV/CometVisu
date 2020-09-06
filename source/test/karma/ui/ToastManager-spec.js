@@ -1,26 +1,26 @@
 
 describe('test the NotificationCenter', function () {
 
-  var center = cv.ui.ToastManager.getInstance();
-
   beforeEach(function() {
-    center._init();
+    cv.ui.ToastManager.getInstance()._init();
   });
 
   afterEach(function() {
-    center.clear(true);
+    cv.ui.ToastManager.getInstance().clear(true);
   });
 
   it("should test some basics", function () {
+    var center = cv.ui.ToastManager.getInstance();
     var severities = center.getSeverities();
     expect(severities.indexOf("low")).toBeGreaterThanOrEqual(0);
     expect(severities.indexOf("normal")).toBeGreaterThanOrEqual(0);
     expect(severities.indexOf("high")).toBeGreaterThanOrEqual(0);
     expect(severities.indexOf("urgent")).toBeGreaterThanOrEqual(0);
+
   });
 
   it('should handle messages', function() {
-
+    var center = cv.ui.ToastManager.getInstance();
     var message = {
       topic: "cv.test",
       title: "Title",
@@ -29,45 +29,46 @@ describe('test the NotificationCenter', function () {
       target: "toast"
     };
 
-    center.handleMessage(qx.lang.Object.clone(message));
+    center.handleMessage(Object.assign({}, message));
     expect(center.getMessages().getLength()).toBe(1);
 
     // add message with higher severity
     message.severity = "high";
     message.unique = true;
 
-    var messageId = center.__idCounter-1;
-    center.handleMessage(qx.lang.Object.clone(message));
+    var messageId = center.getIdCounter()-1;
+    center.handleMessage(Object.assign({}, message));
     // as the message was unique it replaces the old one
     expect(center.getMessages().getLength()).toBe(1);
 
-    var messageElement = qx.bom.Selector.query("#"+center.getMessageElementId()+messageId)[0];
-    expect(qx.bom.element.Class.has(messageElement, "high")).toBeTruthy();
+    var messageElement = document.querySelector("#"+center.getMessageElementId()+messageId);
+    expect(messageElement.classList.contains("high")).toBeTruthy();
 
     // add message with higher severity
     message.severity = "urgent";
     message.unique = false;
 
-    messageId = center.__idCounter;
-    center.handleMessage(qx.lang.Object.clone(message));
+    messageId = center.getIdCounter();
+    center.handleMessage(Object.assign({}, message));
     // as the message was unique it replaces the old one
     expect(center.getMessages().getLength()).toBe(2);
 
-    messageElement = qx.bom.Selector.query("#"+center.getMessageElementId()+messageId)[0];
-    expect(qx.bom.element.Class.has(messageElement, "urgent")).toBeTruthy();
+    messageElement = document.querySelector("#"+center.getMessageElementId()+messageId);
+    expect(messageElement.classList.contains("urgent")).toBeTruthy();
 
     // remove unique messages
     message.condition = false;
     message.unique = true;
 
-    center.handleMessage(qx.lang.Object.clone(message));
-    center.handleMessage(qx.lang.Object.clone(message));
+    center.handleMessage(Object.assign({}, message));
+    center.handleMessage(Object.assign({}, message));
     // as we had 2 messages with same topic both should be gone now
     expect(center.getMessages().getLength()).toBe(0);
 
   });
 
   it("should test the maxEntries limit", function() {
+    var center = cv.ui.ToastManager.getInstance();
     center.setMaxEntries(5);
     var message = {
       topic: "cv.test",
@@ -78,7 +79,7 @@ describe('test the NotificationCenter', function () {
     };
 
     for(var i=0; i< 10; i++) {
-      var msg = qx.lang.Object.clone(message);
+      var msg = Object.assign({}, message);
       msg.title = i;
       center.handleMessage(msg);
     }
@@ -101,6 +102,7 @@ describe('test the NotificationCenter', function () {
   });
 
   it("should perform a message action", function() {
+    var center = cv.ui.ToastManager.getInstance();
     var spy = jasmine.createSpy();
 
     qx.Class.define("cv.test.ActionHandler", {
@@ -143,6 +145,7 @@ describe('test the NotificationCenter', function () {
   });
 
   it("should test the interaction handling with list items", function() {
+    var center = cv.ui.ToastManager.getInstance();
     if (window.PointerEvent) {
       // click on the message content
       var down = new PointerEvent("pointerdown", {
@@ -179,10 +182,10 @@ describe('test the NotificationCenter', function () {
         severity: "normal",
         target: "toast"
       };
-      var messageId = center.__idCounter;
+      var messageId = center.getIdCounter();
       center.handleMessage(message);
 
-      var element = qx.bom.Selector.query("#"+center.getMessageElementId()+messageId)[0];
+      var element = document.querySelector("#"+center.getMessageElementId()+messageId);
       element.dispatchEvent(down);
       element.dispatchEvent(up);
       expect(center.deleteMessage).toHaveBeenCalledWith(messageId);
@@ -203,7 +206,7 @@ describe('test the NotificationCenter', function () {
 
       center.handleMessage(message);
 
-      element = qx.bom.Selector.query("#"+center.getMessageElementId()+messageId)[0];
+      element = document.querySelector("#"+center.getMessageElementId()+messageId);
 
       spyOn(center, "performAction");
 

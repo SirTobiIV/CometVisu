@@ -28,7 +28,7 @@ describe("testing a slide widget", function() {
   it("should test the slide creator", function() {
 
     var res = this.createTestWidgetString("slide", {}, '<label>Test</label>');
-    var widget = qx.bom.Html.clean([res[1]])[0];
+    var widget = cv.util.String.htmlStringToDomElement(res[1]);
     expect(res[0].getPath()).toBe("id_0");
 
     expect(widget).toHaveClass('slide');
@@ -53,7 +53,7 @@ describe("testing a slide widget", function() {
     var widgetInstance = this.createTestElement("slide", {}, null, "Test_slide", {transform: 'DPT:5.004'});
     this.initWidget(widgetInstance);
     widgetInstance.update("Test_slide", "64"); // 0x64 == 100
-    expect(widgetInstance.__slider.getValue()).toBe(100);
+    expect(widgetInstance.getBasicValue()).toBe(100);
   });
 
   it("should not re-send incoming data", function() {
@@ -63,7 +63,7 @@ describe("testing a slide widget", function() {
     this.initWidget(widgetInstance);
     spyOn(widgetInstance, 'sendToBackend');
     widgetInstance.update("Test_slide_read", "64"); // 0x64 == 100
-    expect(widgetInstance.__slider.getValue()).toBe(100);
+    expect(widgetInstance.getBasicValue()).toBe(100);
     expect(widgetInstance.sendToBackend).not.toHaveBeenCalled();
   });
 });

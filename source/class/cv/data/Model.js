@@ -70,6 +70,10 @@ qx.Class.define('cv.data.Model', {
     __addressList : null,
     __widgetData: null,
 
+    getStateListener: function () {
+      return this.__stateListeners;
+    },
+
     /**
      * Updates the state of a single address
      *
@@ -143,7 +147,7 @@ qx.Class.define('cv.data.Model', {
           }
         });
         if (removeIndex >= 0) {
-          qx.lang.Array.removeAt(this.__stateListeners[address], removeIndex);
+          this.__stateListeners[address].splice(removeIndex, 1);
           if (this.__stateListeners[address].length === 0) {
             delete this.__stateListeners[address];
           }
@@ -215,11 +219,11 @@ qx.Class.define('cv.data.Model', {
      */
     getWidgetDataByElement: function (element) {
       var
-        parent = qx.dom.Element.getParentElement(element),
-        path = qx.bom.element.Attribute.get(parent, 'id');
+        parent = element.parentNode,
+        path = parent.getAttribute('id');
 
       if (path === undefined) {
-        path = qx.bom.element.Attribute.get(qx.dom.Element.getParentElement(parent), 'id');
+        path = parent.parentNode.getAttribute('id');
       }
       return this.getWidgetData(path);
     },

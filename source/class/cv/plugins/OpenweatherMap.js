@@ -24,9 +24,9 @@
  * @author Stefan Borchert (stefan@borchert.cc)
  * @author Matthias
  * @since 0.9.0
- * @asset(plugins/openweathermap/owm_core.js,
- *        plugins/openweathermap/owm_basic_style.css, 
- *        plugins/openweathermap/owm_weathericon.css)
+ * @asset(plugins/openweathermap/owm_core.js)
+ * @asset(plugins/openweathermap/owm_basic_style.css)
+ * @asset(plugins/openweathermap/owm_weathericon.css)
  */
 qx.Class.define('cv.plugins.OpenweatherMap', {
   extend: cv.ui.structure.AbstractWidget,
@@ -46,6 +46,14 @@ qx.Class.define('cv.plugins.OpenweatherMap', {
         this.__options[key] = props[key];
       }
     }, this);
+    if (cv.TemplateEngine.getInstance().isDomFinished()) {
+      this._refreshAction();
+    } else {
+      qx.event.message.Bus.subscribe("setup.dom.finished", function () {
+        // init once
+        this._refreshAction();
+      }, this);
+    }
   },
 
   /*

@@ -25,6 +25,7 @@
  * 
  * @author Christian Mayer
  * @since 0.11.0
+ * @asset(plugins/tr064/*)
  */
 
 qx.Class.define('cv.plugins.tr064.CallList', {
@@ -274,8 +275,13 @@ qx.Class.define('cv.plugins.tr064.CallList', {
           self.__calllistUri = '<fail>';
         })
         .then( function( data ) {
-          self.__calllistUri = data;
-          self.refreshCalllist('getCallListURI');
+          if( typeof data === 'string' ) {
+            self.__calllistUri = data;
+            self.refreshCalllist('getCallListURI');
+          } else {
+            console.error('Error: reading URL "' + url + ' failed with content:', data );
+            self.__calllistUri = '<fail>';
+          }
         });
     },
 
@@ -381,7 +387,7 @@ qx.Class.define('cv.plugins.tr064.CallList', {
 
   defer: function(statics) {
     var loader = cv.util.ScriptLoader.getInstance();
-    loader.addStyles('resource/plugins/tr064/tr064.css');
+    loader.addStyles('plugins/tr064/tr064.css');
     cv.parser.WidgetParser.addHandler("calllist", cv.plugins.tr064.CallList);
     cv.ui.structure.WidgetFactory.registerClass("calllist", statics);
   }

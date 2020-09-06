@@ -19,15 +19,6 @@
 
 
 /**
- * CustomMatcher factory for CometVisu specific matchers
- *
- * @author tobiasb
- * @since 2016
- */
-
-var templateEngine = cv.TemplateEngine.getInstance();
-
-/**
  * Create a widget as string
  * @param name {String} name of the widget creator
  * @param attributes {Map} widget attributes
@@ -40,13 +31,13 @@ var createTestWidgetString = function (name, attributes, content) {
     content = "";
   }
   var elem = qx.dom.Element.create(name, attributes);
-  qx.bom.element.Attribute.set(elem, "html", content);
+  elem.innerHTML = content;
 
   var data = null;
   if (name !== "page") {
     // create surrounding root page
     var page = qx.dom.Element.create("page", {visible: "false"});
-    qx.dom.Element.insertEnd(elem, page);
+    page.appendChild(elem);
     data = cv.parser.WidgetParser.parse(page, 'id', null, "text");
     cv.ui.structure.WidgetFactory.createInstance(data.$$type, data);
     data = cv.data.Model.getInstance().getWidgetData(data.children[0]);
@@ -126,6 +117,7 @@ var createTestElement = function (name, attributes, content, address, addressAtt
 };
 
 resetApplication = function() {
+  var templateEngine = cv.TemplateEngine.getInstance();
   // cleanup
   cv.data.Model.getInstance().clear();
   cv.ui.structure.WidgetFactory.clear();
@@ -135,10 +127,9 @@ resetApplication = function() {
     delete subs[topic];
   });
 
-  var body = qx.bom.Selector.query("body")[0];
+  var body = document.querySelector("body");
   // load empty HTML structure
-  qx.dom.Element.empty(body);
-  qx.bom.Html.clean([cv.Application.HTML_STRUCT], null, body);
+  body.innerHTML = cv.Application.HTML_STRUCT;
 
   cv.Config.cacheUsed = false;
   // reset templateEngine's init values
@@ -153,7 +144,7 @@ resetApplication = function() {
 // DOM Helpers
 
 var findChild = function(elem, selector) {
-  return qx.bom.Selector.matches(selector, qx.dom.Hierarchy.getDescendants(elem))[0];
+  return Array.from(elem.getElementsByTagName("*")).filter(function(m){return m.matches(selector);})[0];
 };
 
 var customMatchers = {
@@ -162,7 +153,7 @@ var customMatchers = {
       compare: function(actual, expected) {
         var result = {};
 
-        result.pass = qx.bom.element.Class.has(actual, 'flavour_'+expected);
+        result.pass = actual.classList.contains('flavour_'+expected);
         if (result.pass) {
           result.message = "Expected " + actual.tagName + " not to be flavoured with "+expected;
         }
@@ -178,7 +169,7 @@ var customMatchers = {
     return  {
       compare: function(actual, expected) {
         var result = {};
-        result.pass = qx.bom.element.Class.has(actual, expected);
+        result.pass = actual.classList.contains(expected);
         if (result.pass) {
           result.message = "Expected " + actual.tagName + " not to have class "+expected;
         }
@@ -194,13 +185,13 @@ var customMatchers = {
     return  {
       compare: function(actual, expected) {
         var result = {};
-        var label = qx.bom.Selector.matches("div.label", qx.dom.Hierarchy.getChildElements(actual))[0];
-        result.pass = label && qx.dom.Node.getText(label) === expected;
+        var label = Array.from(actual.children).filter(function(m){return m.matches("div.label");})[0];
+        result.pass = label && label.innerText === expected;
         if (result.pass) {
           result.message = "Expected " + actual.tagName + " not to have value "+expected;
         }
         else{
-          result.message = "Expected " + actual.tagName + " to have value "+expected+", but it has "+qx.dom.Node.getText(label);
+          result.message = "Expected " + actual.tagName + " to have value "+expected+", but it has "+label.innerText;
         }
         return result;
       }
@@ -211,13 +202,13 @@ var customMatchers = {
     return  {
       compare: function(actual, expected) {
         var result = {};
-        var label = qx.bom.Selector.matches(".value", qx.dom.Hierarchy.getDescendants(actual))[0];
-        result.pass = label && qx.dom.Node.getText(label) === expected;
+        var label = Array.from(actual.getElementsByTagName("*")).filter(function(m){return m.matches(".value");})[0];
+        result.pass = label && label.innerText === expected;
         if (result.pass) {
           result.message = "Expected " + actual.tagName + " not to have label "+expected;
         }
         else{
-          result.message = "Expected " + actual.tagName + " to have label "+expected+", but it has "+qx.dom.Node.getText(label);
+          result.message = "Expected " + actual.tagName + " to have label "+expected+", but it has "+label.innerText;
         }
         return result;
       }
@@ -278,9 +269,9 @@ var customMatchers = {
     return  {
       compare: function(actual) {
         var result = {};
-        result.pass = qx.bom.element.Style.get(actual, 'display') !== 'none';
+        result.pass = window.getComputedStyle(actual)['display'] !== 'none';
         if (result.pass) {
-          result.message = "Expected " + actual.tagName + " not to be visible, but it is "+qx.bom.element.Style.get(actual, 'display');
+          result.message = "Expected " + actual.tagName + " not to be visible, but it is "+window.getComputedStyle(actual)['display'];
         }
         else{
           result.message = "Expected " + actual.tagName + " to be visible";
@@ -291,27 +282,32 @@ var customMatchers = {
   }
 };
 
-beforeAll(function(done) {
-
-  if (!qx.$$loader.applicationHandlerReady) {
-    cv.Config.enableCache = false;
-    qx.event.message.Bus.subscribe("setup.dom.finished", function () {
-      resetApplication();
-      done();
-    }, this);
-    var l = qx.$$loader;
-    var bootPackageHash = l.parts[l.boot][0];
-    l.importPackageData(qx.$$packageData[bootPackageHash]);
-    qx.util.ResourceManager.getInstance().__registry = qx.$$resources;
-    qx.$$loader.signalStartup();
-
-    // always test in 'en' locale
-    qx.locale.Manager.getInstance().setLocale("en");
-  }
+beforeAll(function (done) {
+  jasmine.addMatchers(customMatchers);
+  setTimeout(function () {
+    try {
+      cv.Config.enableCache = false;
+      // always test in 'en' locale
+      qx.locale.Manager.getInstance().setLocale("en");
+      var templateEngine = cv.TemplateEngine.getInstance();
+      var startUp = function () {
+        resetApplication();
+        setTimeout(done, 100);
+      }
+      if (templateEngine.isDomFinished()) {
+        startUp()
+      } else {
+        qx.event.message.Bus.subscribe('setup.dom.finished', startUp, this);
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }, 2000)
 });
 
 beforeEach(function () {
-  jasmine.addMatchers(customMatchers);
+  var templateEngine = cv.TemplateEngine.getInstance();
+
   this.createTestElement = createTestElement;
   this.createTestWidgetString = createTestWidgetString;
   this.findChild = findChild;
@@ -332,6 +328,7 @@ beforeEach(function () {
 });
 
 afterEach(function () {
+  var templateEngine = cv.TemplateEngine.getInstance();
   templateEngine.widgetData = {};
   cv.data.Model.getInstance().clear();
   cv.ui.structure.WidgetFactory.clear();
@@ -343,17 +340,20 @@ afterEach(function () {
   cv.ui.layout.ResizeHandler.reset();
 
   if (this.container) {
-    document.body.removeChild(this.container);
+    try {
+      document.body.removeChild(this.container);
+    } catch (e) {
+      console.error(e)
+    }
     this.container = null;
   }
   if (this.creator) {
     this.creator = null;
   }
 
-  var body = qx.bom.Selector.query("body")[0];
+  var body = document.querySelector("body");
   // load empty HTML structure
-  qx.dom.Element.empty(body);
-  qx.bom.Html.clean([cv.Application.HTML_STRUCT], null, body);
+  body.innerHTML = cv.Application.HTML_STRUCT;
   cv.TemplateEngine.getInstance().resetDomFinished();
   // resetApplication();
 });

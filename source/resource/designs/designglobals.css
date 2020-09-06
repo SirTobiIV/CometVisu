@@ -20,6 +20,11 @@ body
   overflow: hidden;
 }
 
+a, img {
+  -webkit-user-drag: none;
+  /* not a standard yet, but probably in the future. Also no way known to help firefox at the moment. */
+  user-drag: none;
+}
 /*
  * Default height for all icons
  */
@@ -51,6 +56,11 @@ body
 #navbarRight {
   width: 0;          /* right bar width */
   margin-right: 0;   /* right bar width */
+}
+.mobile #navbarLeft,
+.mobile #navbarRight {
+  position: absolute;
+  z-index: 1;
 }
 #navbarTop {
 }
@@ -253,6 +263,29 @@ button.ui-slider-handle {
   min-height: 2em;
 }
 
+.roundbar > .actor {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.roundbar .axis,
+.roundbar .major,
+.roundbar .minor {
+  stroke: white;
+}
+.roundbar .sector {
+  fill: none;
+}
+.roundbar .indicator {
+  fill: #FF8000;
+  stroke: #FF8000;
+}
+.roundbar .axislabel,
+.roundbar .value {
+  fill: white;
+}
+
 #notification-center {
   position: absolute;
   width: 300px;
@@ -304,6 +337,7 @@ button.ui-slider-handle {
 
 #notification-center > .badge.normal, #toast-list .toast.normal {
   background-color: rgba(255, 244, 230, 0.9);
+  color: #000000;
 }
 
 #notification-center > .badge.low, #toast-list .toast.low {
@@ -490,6 +524,7 @@ button.ui-slider-handle {
   font-size: 0.8em;
 }
 
+.popup .reload,
 .popup .actions { text-align: center; white-space: nowrap; clear: both; }
 .popup .actions button {
   padding: 0.3em 1em;

@@ -32,6 +32,22 @@ qx.Class.define('cv.util.ScriptLoader', {
     this.__scriptQueue = new qx.data.Array();
     this.__loaders = new qx.data.Array();
     this.__delayedScriptQueue = new qx.data.Array();
+    this.__markedAsLoaded = [];
+  },
+
+  /*
+  ***********************************************
+    STATICS
+  ***********************************************
+  */
+  statics: {
+    markAsLoaded: function (path) {
+      return this.getInstance().markAsLoaded(path);
+    },
+
+    isMarkedAsLoaded: function (path) {
+      return this.getInstance().isMarkedAsLoaded(path);
+    },
   },
 
   /*
@@ -67,30 +83,35 @@ qx.Class.define('cv.util.ScriptLoader', {
     __scriptQueue: null,
     __loaders: null,
     __listener : null,
+    __markedAsLoaded: null,
 
     addStyles: function(styleArr) {
-      var queue = (qx.lang.Type.isString(styleArr) ? [ styleArr ] : qx.lang.Array.clone(styleArr));
+      var queue = (typeof styleArr === 'string' ? [ styleArr ] : styleArr.concat());
       var suffix = (cv.Config.forceReload === true) ? '?'+Date.now() : '';
       queue.forEach(function(style) {
         qx.bom.Stylesheet.includeFile(qx.util.ResourceManager.getInstance().toUri(style) + suffix);
       }, this);
     },
 
+    markAsLoaded: function (path) {
+      if (!this.__markedAsLoaded.includes(path)) {
+        this.debug('marking ' + path + ' as loaded')
+        this.__markedAsLoaded.push(path)
+      }
+    },
+
+    isMarkedAsLoaded: function (path) {
+      return this.__markedAsLoaded.includes(path)
+    },
+
     addScripts: function(scriptArr, order) {
-      var queue = (qx.lang.Type.isString(scriptArr) ? [ scriptArr ] : scriptArr);
+      var queue = (typeof scriptArr === 'string' ? [ scriptArr ] : scriptArr);
       // make sure that no cached scripts are loaded
       var suffix = (cv.Config.forceReload === true) ? '?'+Date.now() : '';
       var realQueue = [];
       for (var i=0, l = queue.length; i<l; i++) {
-        if (qx.core.Environment.get("qx.debug") === true) {
-          // in source load all scripts
+        if (!this.__markedAsLoaded.includes(queue[i])) {
           realQueue.push(qx.util.ResourceManager.getInstance().toUri(queue[i]) + suffix);
-        } else {
-          // in build do not load plugin dependency scripts as they are included in the plugin script
-          // unknown plugins should be loaded although
-          if (queue[i].indexOf("plugins/") === -1 || /resource\/plugins\/[^/]+\/index.js/.test(queue[i])) {
-            realQueue.push(qx.util.ResourceManager.getInstance().toUri(queue[i]) + suffix);
-          }
         }
       }
       if (realQueue.length === 0) {
@@ -102,7 +123,7 @@ qx.Class.define('cv.util.ScriptLoader', {
         var processQueue = function () {
           if (order.length > 0) {
             var loadIndex = order.shift();
-            var script = qx.lang.Array.removeAt(realQueue, loadIndex);
+            var script = realQueue.splice(loadIndex, 1)[0];
             var loader = this.__loadSingleScript(script);
             loader.addListener("ready", processQueue, this);
           } else {

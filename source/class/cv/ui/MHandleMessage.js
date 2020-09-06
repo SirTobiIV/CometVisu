@@ -103,7 +103,11 @@ qx.Mixin.define("cv.ui.MHandleMessage", {
   members: {
     _messages: null,
     _severities: null,
-    __idCounter: 0,
+    _idCounter: 0,
+
+    getIdCounter: function () {
+      return this._idCounter;
+    },
 
     getSeverities: function() {
       return this._severities;
@@ -188,8 +192,8 @@ qx.Mixin.define("cv.ui.MHandleMessage", {
       }
       if (!found) {
         if (cv.core.notifications.Router.evaluateCondition(message)) {
-          message.id = this.__idCounter;
-          this.__idCounter++;
+          message.id = this._idCounter;
+          this._idCounter++;
           message.tooltip = this._getTooltip(message);
           if (!message.hasOwnProperty("deletable")) {
             message.deletable = true;
@@ -225,11 +229,11 @@ qx.Mixin.define("cv.ui.MHandleMessage", {
       var target = ev.getTarget();
       var deleteTarget = null;
       var messageId = -1;
-      var id = qx.bom.element.Attribute.get(target, "id");
+      var id = target.getAttribute("id");
       var rootId = this.getRootElementId();
       var messageElementId = this.getMessageElementId();
       while (!id || !id.startsWith(rootId)) {
-        if (qx.bom.element.Class.has(target, "delete")) {
+        if (target.classList.contains("delete")) {
           deleteTarget = target;
         }
         if (id && id.startsWith(messageElementId)) {
@@ -241,7 +245,7 @@ qx.Mixin.define("cv.ui.MHandleMessage", {
         if (!target) {
           break;
         }
-        id = qx.bom.element.Attribute.get(target, "id");
+        id = target.getAttribute("id");
       }
       return [messageId, deleteTarget ? "delete" : "action"];
     },
@@ -277,7 +281,7 @@ qx.Mixin.define("cv.ui.MHandleMessage", {
     clear: function(force) {
       if (force) {
         this._messages.removeAll();
-        this.__idCounter = 0;
+        this._idCounter = 0;
       } else {
         // collect all deletable messages
         var deletable = this._messages.filter(function (message) {
@@ -332,7 +336,7 @@ qx.Mixin.define("cv.ui.MHandleMessage", {
         return;
       }
       Object.getOwnPropertyNames(message.actions).forEach(function(type) {
-        var typeActions = qx.lang.Type.isArray(message.actions[type]) ? message.actions[type] : [message.actions[type]];
+        var typeActions = Array.isArray(message.actions[type]) ? message.actions[type] : [message.actions[type]];
         typeActions.forEach(function(action) {
           if (!action.needsConfirmation) {
             var handler = cv.core.notifications.ActionRegistry.getActionHandler(type, action);

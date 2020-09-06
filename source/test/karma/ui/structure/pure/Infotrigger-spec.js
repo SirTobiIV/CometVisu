@@ -58,7 +58,19 @@ describe("testing a infotrigger widget", function() {
     var nativeEvent = new window.PointerEvent(type, eventData);
     qx.event.Registration.fireEvent(actor, type, qx.event.type.Pointer, [nativeEvent, actor, actor, true, true]);
   };
-  //
+
+  var realClient;
+  beforeEach(function() {
+    realClient = cv.TemplateEngine.getInstance().visu;
+    var client = new cv.io.Mockup();
+    cv.TemplateEngine.getInstance().visu = client
+    spyOn(client, "write");
+  });
+
+  afterEach(function () {
+    cv.TemplateEngine.getInstance().visu = realClient;
+  })
+
   it("should test the infotrigger creator", function() {
 
     var obj = this.createTestElement("infotrigger", {}, "<label>Test</label>");
@@ -70,21 +82,21 @@ describe("testing a infotrigger widget", function() {
 
     // check infoposition
     var info = obj.getInfoActor();
-    var actors = qx.bom.Selector.matches(".actor", qx.dom.Hierarchy.getDescendants(widget));
+    var actors = Array.from(widget.getElementsByTagName("*")).filter(function(m){return m.matches(".actor");});
     expect(actors.indexOf(info)).toBe(0);
   });
 
   it("should test the infotrigger creator", function() {
     var obj = this.createTestElement("infotrigger", {'align': 'right', 'infoposition': 'middle'});
     var widget = obj.getWidgetElement();
-    var actors = qx.bom.Selector.query("div.actor", widget);
+    var actors = widget.querySelectorAll("div.actor");
     actors.forEach(function(actor) {
-      expect(qx.bom.element.Style.get(actor, "text-align")).toBe("right");
+      expect(window.getComputedStyle(actor)["text-align"]).toBe("right");
     }, this);
 
     // check infoposition
     var info = obj.getInfoActor();
-    actors = qx.bom.Selector.matches(".actor", qx.dom.Hierarchy.getDescendants(widget));
+    actors = Array.from(widget.getElementsByTagName("*")).filter(function(m){return m.matches(".actor");});
     expect(actors.indexOf(info)).toBe(1);
   });
 
@@ -92,14 +104,14 @@ describe("testing a infotrigger widget", function() {
 
     var obj = this.createTestElement("infotrigger", {'align': 'center', 'infoposition': 'right'});
     var widget = obj.getWidgetElement();
-    var actors = qx.bom.Selector.query("div.actor", widget);
+    var actors = widget.querySelectorAll("div.actor");
     actors.forEach(function(actor) {
-      expect(qx.bom.element.Style.get(actor, "text-align")).toBe("center");
+      expect(window.getComputedStyle(actor)["text-align"]).toBe("center");
     }, this);
 
     // check infoposition
     var info = obj.getInfoActor();
-    actors = qx.bom.Selector.matches(".actor", qx.dom.Hierarchy.getDescendants(widget));
+    actors = Array.from(widget.getElementsByTagName("*")).filter(function(m){return m.matches(".actor");});
     expect(actors.indexOf(info)).toBe(2);
   });
 
@@ -168,12 +180,12 @@ describe("testing a infotrigger widget", function() {
       shorttime: "100",
       'change': 'absolute', 'upvalue': '1', 'downvalue': '-1', 'shortupvalue': '2', 'shortdownvalue': '-2'
     }, '<label>Test</label>', ['1/0/0', '1/0/1'], [
-      {'transform': 'DPT:1.001', 'mode': 'write', 'variant': 'button'},
-      {'transform': 'DPT:1.001', 'mode': 'write', 'variant': 'short'}
+      {'transform': 'DPT:6.001', 'mode': 'write', 'variant': 'button'},
+      {'transform': 'DPT:6.001', 'mode': 'write', 'variant': 'short'}
     ]);
 
     this.initWidget(res);
-    var spy = spyOn(cv.TemplateEngine.getInstance().visu, "write");
+    var client = cv.TemplateEngine.getInstance().visu;
     var actor = res.getUpActor();
     expect(actor).not.toBe(null);
 
@@ -182,15 +194,14 @@ describe("testing a infotrigger widget", function() {
     expect(actor).not.toHaveClass("switchUnpressed");
 
     setTimeout(function () {
-      expect(spy.calls.count()).toEqual(0);
+      expect(client.write.calls.count()).toEqual(0);
       // up
       simulateEvent(actor, "pointerup");
       expect(actor).not.toHaveClass("switchPressed");
       expect(actor).toHaveClass("switchUnpressed");
+      expect(client.write).toHaveBeenCalledWith('1/0/0', '8001');
       qx.event.Registration.fireEvent(actor, "tap", qx.event.type.Event, []);
-
-      expect(spy).toHaveBeenCalledWith('1/0/0', '81');
-      expect(spy.calls.count()).toEqual(1);
+      expect(client.write.calls.count()).toEqual(1);
       done();
     }, 150);
 
@@ -202,12 +213,12 @@ describe("testing a infotrigger widget", function() {
       'change': 'absolute', 'upvalue': '1', 'downvalue': '-1', 'shortupvalue': '2', 'shortdownvalue': '-2',
       "send-long-on-release": "false"
     }, '<label>Test</label>', ['1/0/0', '1/0/1'], [
-      {'transform': 'DPT:1.001', 'mode': 'write', 'variant': 'button'},
-      {'transform': 'DPT:1.001', 'mode': 'write', 'variant': 'short'}
+      {'transform': 'DPT:6.001', 'mode': 'write', 'variant': 'button'},
+      {'transform': 'DPT:6.001', 'mode': 'write', 'variant': 'short'}
     ]);
 
     this.initWidget(res);
-    var spy = spyOn(cv.TemplateEngine.getInstance().visu, "write");
+    var client = cv.TemplateEngine.getInstance().visu;
     var actor = res.getUpActor();
     expect(actor).not.toBe(null);
 
@@ -216,8 +227,8 @@ describe("testing a infotrigger widget", function() {
     expect(actor).not.toHaveClass("switchUnpressed");
 
     setTimeout(function () {
-      expect(spy).toHaveBeenCalledWith('1/0/0', '81');
-      expect(spy.calls.count()).toEqual(1);
+      expect(client.write).toHaveBeenCalledWith('1/0/0', '8001');
+      expect(client.write.calls.count()).toEqual(1);
 
       // up
       simulateEvent(actor, "pointerup");
@@ -225,8 +236,8 @@ describe("testing a infotrigger widget", function() {
       expect(actor).toHaveClass("switchUnpressed");
       qx.event.Registration.fireEvent(actor, "tap", qx.event.type.Event, []);
 
-      expect(spy).toHaveBeenCalledWith('1/0/0', '81');
-      expect(spy.calls.count()).toEqual(1);
+      expect(client.write).toHaveBeenCalledWith('1/0/0', '8001');
+      expect(client.write.calls.count()).toEqual(1);
       done();
     }, 150);
 
@@ -237,12 +248,12 @@ describe("testing a infotrigger widget", function() {
       shorttime: "500",
       'change': 'absolute', 'upvalue': '1', 'downvalue': '-1', 'shortupvalue': '2', 'shortdownvalue': '-2'
     }, '<label>Test</label>', ['1/0/0', '1/0/1'], [
-      {'transform': 'DPT:1.001', 'mode': 'write', 'variant': 'button'},
-      {'transform': 'DPT:1.001', 'mode': 'write', 'variant': 'short'}
+      {'transform': 'DPT:6.001', 'mode': 'write', 'variant': 'button'},
+      {'transform': 'DPT:6.001', 'mode': 'write', 'variant': 'short'}
     ]);
 
     this.initWidget(res);
-    var spy = spyOn(cv.TemplateEngine.getInstance().visu, "write");
+    var client = cv.TemplateEngine.getInstance().visu;
     var actor = res.getUpActor();
     expect(actor).not.toBe(null);
 
@@ -255,10 +266,10 @@ describe("testing a infotrigger widget", function() {
       simulateEvent(actor, "pointerup");
       expect(actor).not.toHaveClass("switchPressed");
       expect(actor).toHaveClass("switchUnpressed");
-      qx.event.Registration.fireEvent(actor, "tap", qx.event.type.Event, []);
+      expect(client.write).toHaveBeenCalledWith('1/0/1', '8002');
 
-      expect(spy).toHaveBeenCalledWith('1/0/1', '82');
-      expect(spy.calls.count()).toEqual(1);
+      qx.event.Registration.fireEvent(actor, "tap", qx.event.type.Event, []);
+      expect(client.write.calls.count()).toEqual(1);
       done();
     }, 50);
 

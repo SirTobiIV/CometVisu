@@ -25,7 +25,9 @@
  * @since 0.8.1
  *
  * @ignore(steelseries.*)
- * @asset(plugins/gauge/gauge.css,plugins/gauge/dep/*.min.js)
+ * @asset(plugins/gauge/gauge.css)
+ * @asset(plugins/gauge/dep/steelseries.js)
+ * @asset(plugins/gauge/dep/tween.js)
 */ 
 qx.Class.define('cv.plugins.Gauge', {
   extend: cv.ui.structure.AbstractWidget,
@@ -181,17 +183,14 @@ qx.Class.define('cv.plugins.Gauge', {
         lcdColor: steelseries.LcdColor.STANDARD,
         ledColor: steelseries.LedColor.RED_LED
       };
-      var params = qx.lang.Object.mergeWith(
-        qx.lang.Object.clone(cv.data.Model.getInstance().getWidgetData(this.getPath())),
-        additional
-      );
+      var params = Object.assign({}, cv.data.Model.getInstance().getWidgetData(this.getPath()), additional );
       this.__gaugeElement = new steelseries[this.getGType()]("gauge_"+this.getPath(), params);
       this.base(arguments);
     },
 
     // overridden
     getValueElement: function() {
-      return qx.bom.Selector.query('#gauge_' + this.getPath(), this.getDomElement())[0];
+      return this.getDomElement().querySelector('#gauge_' + this.getPath());
     },
 
     // property apply
@@ -284,8 +283,8 @@ qx.Class.define('cv.plugins.Gauge', {
     var loader = cv.util.ScriptLoader.getInstance();
     loader.addStyles('plugins/gauge/gauge.css');
     loader.addScripts([
-      'plugins/gauge/dep/tween-min.js',
-      'plugins/gauge/dep/steelseries-min.js'
+      'plugins/gauge/dep/tween.js',
+      'plugins/gauge/dep/steelseries.js'
     ]);
     cv.parser.WidgetParser.addHandler("gauge", cv.plugins.Gauge);
     cv.ui.structure.WidgetFactory.registerClass("gauge", statics);

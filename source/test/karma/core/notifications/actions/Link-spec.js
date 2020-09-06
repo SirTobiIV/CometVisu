@@ -10,16 +10,16 @@ describe("testing the Link action", function() {
     });
 
     var actionButton = action.getDomElement();
-    expect(qx.bom.element.Attribute.get(actionButton, "text")).toBe("Title");
+    expect(actionButton.innerText).toBe("Title");
     expect(actionButton).toHaveClass("action");
 
-    var spy = spyOn(cv.util.Location, "open");
+    spyOn(cv.util.Location, "open");
     var event = new qx.event.type.Event();
     event.init(true, true);
     event.setType("tap");
 
     qx.event.Registration.dispatchEvent(actionButton, event);
-    expect(spy).toHaveBeenCalledWith("http://localhost/test", "_blank");
+    expect(cv.util.Location.open).toHaveBeenCalledWith("http://localhost/test", "_blank");
   });
 
   it("should transform string values of action property to functions", function() {
@@ -28,7 +28,7 @@ describe("testing the Link action", function() {
       action: "reload",
       needsConfirmation: false
     });
-    expect(qx.lang.Type.isFunction(action.getAction())).toBeTruthy();
+    expect(typeof action.getAction() === 'function').toBeTruthy();
 
     action = new cv.core.notifications.actions.Link({
       title: "Title",
@@ -42,7 +42,7 @@ describe("testing the Link action", function() {
       action: function() {},
       needsConfirmation: false
     });
-    expect(qx.lang.Type.isFunction(action.getAction())).toBeTruthy();
+    expect(typeof action.getAction() === 'function').toBeTruthy();
   });
 
   it("should execute the actions", function() {

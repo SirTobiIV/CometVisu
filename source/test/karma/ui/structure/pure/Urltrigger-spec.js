@@ -27,7 +27,7 @@ describe("testing a urltrigger widget", function() {
   it("should test the urltrigger creator", function() {
 
     var res = this.createTestWidgetString("urltrigger", {}, '<label>Test</label>');
-    var widget = qx.bom.Html.clean([res[1]])[0];
+    var widget = cv.util.String.htmlStringToDomElement(res[1]);
     expect(res[0].getPath()).toBe("id_0");
 
     expect(widget).toHaveClass('trigger');
@@ -36,11 +36,11 @@ describe("testing a urltrigger widget", function() {
 
   it("should test the urltrigger action", function() {
     var res = this.createTestElement("urltrigger", {url: "/test/test.txt", align: "center"});
-    spyOn(res.__xhr, "send");
+    spyOn(res.getXhr(), "send");
     expect(res.getActor()).toHaveClass("center");
     this.initWidget(res);
 
     res._action();
-    expect(res.__xhr.send).toHaveBeenCalled();
+    expect(res.getXhr().send).toHaveBeenCalled();
   });
 });

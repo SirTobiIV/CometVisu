@@ -59,11 +59,11 @@ qx.Class.define('cv.util.ConfigLoader', {
         cv.Config.configServer = req.getResponseHeader("Server");
         // Response parsed according to the server's response content type
         var xml = req.getResponse();
-        if (xml && qx.lang.Type.isString(xml)) {
+        if (xml && (typeof xml === 'string')) {
           xml = qx.xml.Document.fromString(xml);
         }
         this.__xml = xml;
-        qx.bom.Selector.query('include', xml).forEach(this.loadInclude, this);
+        xml.querySelectorAll('include').forEach(this.loadInclude, this);
         this.__loadQueue.remove(ajaxRequest.getUrl());
 
         if (!xml || !xml.documentElement || xml.getElementsByTagName("parsererror").length) {
@@ -71,16 +71,21 @@ qx.Class.define('cv.util.ConfigLoader', {
         }
         else {
           // check the library version
-          var xmlLibVersion = qx.bom.element.Attribute.get(qx.bom.Selector.query('pages', xml)[0], "lib_version");
+          var xmlLibVersion = xml.querySelector('pages').getAttribute("lib_version");
           if (xmlLibVersion === undefined) {
             xmlLibVersion = -1;
+          } else {
+            xmlLibVersion = parseInt(xmlLibVersion);
           }
-          if (cv.Config.libraryCheck && xmlLibVersion < cv.Config.libraryVersion) {
+          if (cv.Config.libraryCheck && xmlLibVersion < cv.Version.LIBRARY_VERSION) {
             this.configError("libraryerror");
           }
           else {
             if (req.getResponseHeader("X-CometVisu-Backend-LoginUrl")) {
               cv.Config.backendUrl = req.getResponseHeader("X-CometVisu-Backend-LoginUrl");
+              if (!cv.Config.backendUrl.endsWith('/')) {
+                cv.Config.backendUrl += '/';
+              }
             }
             if (req.getResponseHeader("X-CometVisu-Backend-Name")) {
               cv.Config.backend = req.getResponseHeader("X-CometVisu-Backend-Name");
@@ -116,7 +121,7 @@ qx.Class.define('cv.util.ConfigLoader', {
      * @param includeElem {Element}
      */
     loadInclude: function (includeElem) {
-      var url = qx.bom.element.Attribute.get(includeElem, 'src');
+      var url = includeElem.getAttribute('src');
       if (!url.startsWith('/')) {
         url = qx.util.LibraryManager.getInstance().get('cv', 'resourceUri') + '/' + url;
       }
@@ -131,7 +136,7 @@ qx.Class.define('cv.util.ConfigLoader', {
         var xml = qx.xml.Document.fromString('<root>' + req.getResponseText() + '</root>');
         var parent = includeElem.parentElement;
         parent.removeChild(includeElem);
-        qx.dom.Hierarchy.getChildElements(xml.firstChild).forEach(function (child) {
+        xml.firstChild.childNodes.forEach(function (child) {
           parent.appendChild(child);
         });
         this.__loadQueue.remove(url);
@@ -166,28 +171,28 @@ qx.Class.define('cv.util.ConfigLoader', {
      */
     configError: function( textStatus, additionalErrorInfo ) {
       var configSuffix = (cv.Config.configSuffix ? cv.Config.configSuffix : '');
-      var title = qx.locale.Manager.tr('Config-File Error!');
+      var title = qx.locale.Manager.tr('Config-File Error!').translate().toString();
       var message = '';
       switch (textStatus) {
         case 'parsererror':
-          message = qx.locale.Manager.tr("Invalid config file!")+'<br/><a href="check_config.php?config=' + configSuffix + '">'+qx.locale.Manager.tr("Please check!")+'</a>';
+          message = qx.locale.Manager.tr("Invalid config file!")+'<br/><a href="#" onclick="showConfigErrors(\'' + configSuffix + '\')">'+qx.locale.Manager.tr("Please check!")+'</a>';
           break;
         case 'libraryerror':
-          var link = window.location.href;
+          var link = window.location.href.split('#')[0];
           if (link.indexOf('?') <= 0) {
             link = link + '?';
           }
           link = link + '&libraryCheck=false';
-          message = qx.locale.Manager.tr('Config file has wrong library version!')+'<br/>' +
-            qx.locale.Manager.tr('This can cause problems with your configuration')+'</br>' +
-            '<p>'+qx.locale.Manager.tr("You can run the %1Configuration Upgrader%2.", '<a href="./upgrade/index.php?config=' + configSuffix + '">', '</a>') +'</br>' +
-            qx.locale.Manager.tr('Or you can start without upgrading %1with possible configuration problems%2', '<a href="' + link + '">', '</a>')+'</p>';
+          message = qx.locale.Manager.tr('Config file has wrong library version!').translate().toString()+'<br/>' +
+            qx.locale.Manager.tr('This can cause problems with your configuration').translate().toString()+'</br>' +
+            '<p>'+qx.locale.Manager.tr("You can run the %1Configuration Upgrader%2.", '<a href="#" onclick="showConfigErrors(\'' + configSuffix + '\', {upgradeVersion: true})">', '</a>').translate().toString() +'</br>' +
+            qx.locale.Manager.tr('Or you can start without upgrading %1with possible configuration problems%2', '<a href="' + link + '">', '</a>').translate().toString()+'</p>';
           break;
         case 'filenotfound':
-          message = qx.locale.Manager.tr('404: Config file not found. Neither as normal config (%1) nor as demo config (%2).', additionalErrorInfo[0], additionalErrorInfo[1]);
+          message = qx.locale.Manager.tr('404: Config file not found. Neither as normal config (%1) nor as demo config (%2).', additionalErrorInfo[0], additionalErrorInfo[1]).translate().toString();
           break;
         default:
-          message = qx.locale.Manager.tr('Unhandled error of type "%1"', textStatus);
+          message = qx.locale.Manager.tr('Unhandled error of type "%1"', textStatus).translate().toString();
           if( additionalErrorInfo ) {
             message += ': ' + additionalErrorInfo;
           }

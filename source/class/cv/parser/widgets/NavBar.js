@@ -48,16 +48,18 @@ qx.Class.define('cv.parser.widgets.NavBar', {
     createDefaultWidget: function (widgetType, n, path) {
 
       var classes = "navbar clearfix";
-      if (qx.bom.element.Attribute.get(n, 'flavour')) {
-        classes += " flavour_" + qx.bom.element.Attribute.get(n, 'flavour');
+      if (n.getAttribute('flavour')) {
+        classes += " flavour_" + n.getAttribute('flavour');
       }// sub design choice
 
       // store scope globally
       var id = path.split("_");
       id.pop();
-      var pos = qx.bom.element.Attribute.get(n, 'position') || 'left';
+      var pos = n.getAttribute('position') || 'left';
       cv.data.Model.getInstance().setWidgetData(id.join('_') + '_' + pos + '_navbar', {
-        'scope': cv.parser.widgets.NavBar._transformScope(qx.bom.element.Attribute.get(n, 'scope'))
+        'dynamic': cv.parser.widgets.NavBar._transformDynamic(n.getAttribute('dynamic')),
+        'scope': cv.parser.widgets.NavBar._transformScope(n.getAttribute('scope')),
+        'width': n.getAttribute('width')
       });
 
       return cv.data.Model.getInstance().setWidgetData(cv.parser.WidgetParser.getStoragePath(n, path), {
@@ -65,6 +67,17 @@ qx.Class.define('cv.parser.widgets.NavBar', {
         'classes': classes,
         '$$type': widgetType
       });
+    },
+
+    _transformDynamic: function(value) {
+      switch (value) {
+        case 'true':
+          return true;
+
+        case 'false':
+          return false;
+      }
+      return null;
     },
 
     _transformScope: function(value) {
@@ -80,11 +93,7 @@ qx.Class.define('cv.parser.widgets.NavBar', {
       return {
         'scope': {"default": -1, transform: cv.parser.widgets.NavBar._transformScope},
         'name': {},
-        'dynamic': {
-          transform: function (value) {
-            return value === "true";
-          }
-        },
+        'dynamic': {transform: cv.parser.widgets.NavBar._transformDynamic},
         'width': {"default": "300"},
         'position': {"default": 'left'}
       };

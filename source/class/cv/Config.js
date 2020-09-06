@@ -47,11 +47,6 @@ qx.Class.define('cv.Config', {
     currentPageId: null,
 
     /**
-     * Config file version
-     * @type {Number}
-     */
-    libraryVersion: 8,
-    /**
      * @type {Boolean}
      */
     libraryCheck: true,
@@ -160,6 +155,11 @@ qx.Class.define('cv.Config', {
     },
 
     /**
+     * Wether the error reporting with sentry is enabled or not
+     */
+    sentryEnabled: false,
+
+    /**
      * If enabled the user interaction gets logged
      */
     reporting: false,
@@ -266,17 +266,24 @@ qx.Class.define('cv.Config', {
       cv.Config.startpage = req.queryKey.startpage;
     }
 
+    if (req.queryKey.reportErrors) {
+      if (window.Sentry) {
+        cv.Config.sentryEnabled = true;
+        Sentry.configureScope(function (scope) {
+          scope.setTag('build.date', cv.Version.DATE);
+          scope.setTag('build.branch', cv.Version.BRANCH);
+          Object.keys(cv.Version.TAGS).forEach(function (tag) {
+            scope.setTag(tag, cv.Version.TAGS[tag]);
+          })
+        })
+      }
+    }
+
+    // store for later usage
+    cv.Config.request = req;
+
     if (qx.core.Environment.get('cv.testMode') !== false) {
       cv.Config.testMode = true;
-      if (qx.core.Environment.get('cv.testMode') !== "true") {
-        // load the demo data to fill the visu with some values
-        var r = new qx.io.request.Xhr(qx.core.Environment.get('cv.testMode'));
-        r.addListener('success', function (e) {
-          var data = e.getTarget().getResponse();
-          cv.Config.initialDemoData = data;
-        });
-        r.send();
-      }
     } else if (req.queryKey.testMode) {
       cv.Config.testMode = req.queryKey.testMode === "true" || req.queryKey.testMode === "1";
     }
@@ -323,19 +330,23 @@ qx.Class.define('cv.Config', {
     // has changed but the browser doesn't even ask the server about it...
     cv.Config.forceReload = true;
 
-    if (req.queryKey.forceDevice) {
-      cv.Config.forceMobile = req.queryKey.forceDevice === 'mobile';
-      cv.Config.forceNonMobile = !cv.Config.forceMobile;
-    } else {
-      cv.Config.forceMobile = false;
-      cv.Config.forceNonMobile = false;
-    }
     var uagent = navigator.userAgent.toLowerCase();
     cv.Config.mobileDevice = (/(android|blackberry|iphone|ipod|series60|symbian|windows ce|palm)/i.test(uagent));
     if (/(nexus 7|tablet)/i.test(uagent)) {
       cv.Config.mobileDevice = false;  // Nexus 7 and Android Tablets have a "big" screen, so prevent Navbar from scrolling
     }
-    cv.Config.mobileDevice |= cv.Config.forceMobile;  // overwrite detection when set by URL
+    if (req.queryKey.forceDevice) { // overwrite detection when set by URL
+      switch( req.queryKey.forceDevice )
+      {
+        case 'mobile':
+          cv.Config.mobileDevice = true;
+          break;
+
+        case 'nonmobile':
+          cv.Config.mobileDevice = false;
+          break;
+      }
+    }
 
 
     // Disable features that aren't ready yet
